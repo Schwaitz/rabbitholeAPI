@@ -4,14 +4,13 @@ from api import YoutubeAPI
 from datetime import datetime
 
 from flask.views import MethodView
-from handlers import MySQLHandler
 
 import app_config as app_config
 
 app = Flask(__name__)
 mysql = MySQL(app)
 
-app.config['TESTING'] = True
+app.config['TESTING'] = False
 app.config['SECRET_KEY'] = app_config.SECRET_KEY
 
 app.config['MYSQL_HOST'] = app_config.host
@@ -19,6 +18,7 @@ app.config['MYSQL_USER'] = app_config.user
 app.config['MYSQL_PASSWORD'] = app_config.password
 app.config['MYSQL_DB'] = app_config.database
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
 app.url_map.strict_slashes = False
 
@@ -30,6 +30,104 @@ def get_result(r):
     except Exception as e:
         print(str({'status': 'error', 'action': 'get_result', 'exception': str(type(e).__name__), 'message': 'Error during the getting of a result', 'e': str(e)}))
         return str(r.text)
+
+
+def execute_select(query, values=('none',)):
+    cur = mysql.connection.cursor()
+    return_message = {}
+    try:
+        if values[0] == 'none':
+            cur.execute(query)
+        else:
+            cur.execute(query, values)
+
+        return_message = list(cur.fetchall())
+        if len(return_message) == 1:
+            return_message = return_message[0]
+
+    except Exception as e:
+        return_message = {'status': 'error', 'data': {'action': 'SELECT', 'exception': str(type(e).__name__), 'message': 'Error during execution of query', 'e': str(e)}}
+    finally:
+        cur.close()
+        return return_message
+
+
+def execute_insert(table, fields, values):
+    cur = mysql.connection.cursor()
+    return_message = {}
+    try:
+        values_string = "("
+        for v in values:
+            values_string += "%s, "
+        values_string = values_string[:-2]
+        values_string += ")"
+
+        fields_string = "("
+        for f in fields:
+            fields_string += f + ", "
+        fields_string = fields_string[:-2]
+        fields_string += ")"
+
+        query = """INSERT INTO {} {} VALUES {}""".format(table, fields_string, values_string)
+
+        cur.execute(query, values)
+        mysql.connection.commit()
+        return_message = {'status': 'success', 'action': 'INSERT', 'data': {}}
+
+        for i in range(0, len(fields)):
+            return_message['data'][fields[i]] = values[i]
+
+    except Exception as e:
+        return_message = {'status': 'error', 'action': 'INSERT', 'exception': str(type(e).__name__), 'message': 'Error during execution of query', 'e': str(e)}
+    finally:
+        cur.close()
+        return return_message
+
+
+def execute_delete(table, field, value):
+    cur = mysql.connection.cursor()
+    return_message = {}
+    try:
+        query = """DELETE FROM {} WHERE {} = %s""".format(table, field)
+        cur.execute(query, (value,))
+        mysql.connection.commit()
+
+        return_message = {'status': 'success', 'action': 'DELETE'}
+    except Exception as e:
+        return_message = {'status': 'error', 'action': 'DELETE', 'exception': str(type(e).__name__), 'message': 'Error during execution of query', 'e': str(e)}
+    finally:
+        cur.close()
+        return return_message
+
+
+def tag_exists(tag):
+    data = execute_select("""SELECT COUNT(*) FROM tags WHERE tag = %s""", (tag,))
+    return data["COUNT(*)"] >= 1
+
+
+def video_exists(video_id):
+    data = execute_select("""SELECT COUNT(*) FROM videos WHERE video_id = %s""", (video_id,))
+    return data["COUNT(*)"] >= 1
+
+
+def channel_exists(channel_id):
+    data = execute_select("""SELECT COUNT(*) FROM channels WHERE channel_id = %s""", (channel_id,))
+    return data["COUNT(*)"] >= 1
+
+
+def get_channels():
+    data = execute_select("""SELECT * FROM channels""")
+    return data
+
+
+def get_videos():
+    data = execute_select("""SELECT * FROM videos""")
+    return data
+
+
+def get_tags():
+    data = execute_select("""SELECT * FROM tags""")
+    return data
 
 
 def get_channel_hm_from_id(channel_id):
@@ -59,37 +157,37 @@ def make_fail(message):
 
 def create_channel(channel_id):
     channel = YoutubeAPI.get_channel_by_id(channel_id)
-    data = MySQLHandler.execute_insert('channels',
-                                       ['channel_id', 'channel_title', 'channel_description', 'channel_thumbnail_url', 'channel_uploads_playlist'],
-                                       (channel['channelId'], channel['title'], channel['description'], channel['thumbnail'], channel['uploads']))
+    data = execute_insert('channels',
+                          ['channel_id', 'channel_title', 'channel_description', 'channel_thumbnail_url', 'channel_uploads_playlist'],
+                          (channel['channelId'], channel['title'], channel['description'], channel['thumbnail'], channel['uploads']))
     return jsonify(data)
 
 
 def create_video(video_id):
     video = YoutubeAPI.get_video_by_id(video_id)
 
-    if not MySQLHandler.channel_exists(video['channelId']):
+    if not channel_exists(video['channelId']):
         res = create_channel(video['channelId'])
         print("Channel Creation: " + str(res))
 
-    data = MySQLHandler.execute_insert('videos',
-                                       ['video_id', 'video_title', 'video_description', 'video_thumbnail_url', 'video_published_date',
-                                        'video_views', 'video_likes', 'video_dislikes', 'video_comments', 'video_player', 'video_channel_hm', 'video_tags'],
-                                       (video['videoId'], video['title'], video['description'], video['thumbnail'], get_published_datetime(video['published']),
-                                        video['views'], video['likes'], video['dislikes'], video['comments'], video['player'], get_channel_hm_from_id(video['channelId']),
-                                        json.dumps(video['tags'])))
+    data = execute_insert('videos',
+                          ['video_id', 'video_title', 'video_description', 'video_thumbnail_url', 'video_published_date',
+                           'video_views', 'video_likes', 'video_dislikes', 'video_comments', 'video_player', 'video_channel_hm', 'video_tags'],
+                          (video['videoId'], video['title'], video['description'], video['thumbnail'], get_published_datetime(video['published']),
+                           video['views'], video['likes'], video['dislikes'], video['comments'], video['player'], get_channel_hm_from_id(video['channelId']),
+                           json.dumps(video['tags'])))
     return jsonify(data)
 
 
 class ChannelAPI(MethodView):
     def get(self, channel_id):
         if channel_id is None:
-            data = MySQLHandler.get_channels()
+            data = get_channels()
             print(str(len(data)) + ' channels fetched')
             return jsonify(data)
         else:
-            if MySQLHandler.channel_exists(channel_id):
-                data = MySQLHandler.execute_select("""SELECT * FROM channels WHERE channel_id = %s""", (channel_id,))
+            if channel_exists(channel_id):
+                data = execute_select("""SELECT * FROM channels WHERE channel_id = %s""", (channel_id,))
                 return jsonify(data)
             else:
                 return make_fail('channel does not exist')
@@ -103,8 +201,8 @@ class ChannelAPI(MethodView):
 
     def delete(self, channel_id):
         if channel_id is not None:
-            if MySQLHandler.channel_exists(channel_id):
-                data = MySQLHandler.execute_delete('channels', 'channel_id', channel_id)
+            if channel_exists(channel_id):
+                data = execute_delete('channels', 'channel_id', channel_id)
                 return data
             else:
                 return make_fail('channel does not exist')
@@ -112,7 +210,7 @@ class ChannelAPI(MethodView):
             return make_fail("DELETE request must be made on channel object")
 
     def put(self, channel_id):
-        if MySQLHandler.channel_exists(channel_id):
+        if channel_exists(channel_id):
             if request.form['channel_title'] != '' and request.form['channel_description'] != '' and request.form['channel_thumbnail_url'] != '' and request.form['channel_uploads_playlist'] != '':
                 cur = mysql.connection.cursor()
                 return_message = {}
@@ -141,12 +239,12 @@ class ChannelAPI(MethodView):
 class VideoAPI(MethodView):
     def get(self, video_id):
         if video_id is None:
-            data = MySQLHandler.get_videos()
+            data = get_videos()
             print(str(len(data)) + ' videos fetched')
             return jsonify(data)
         else:
-            if MySQLHandler.video_exists(video_id):
-                data = MySQLHandler.execute_select("""SELECT * FROM videos WHERE video_id = %s""", (video_id,))
+            if video_exists(video_id):
+                data = execute_select("""SELECT * FROM videos WHERE video_id = %s""", (video_id,))
                 return jsonify(data)
             else:
                 return make_fail('video does not exist')
@@ -160,8 +258,8 @@ class VideoAPI(MethodView):
 
     def delete(self, video_id):
         if video_id is not None:
-            if MySQLHandler.video_exists(video_id):
-                data = MySQLHandler.execute_delete('videos', 'video_id', video_id)
+            if video_exists(video_id):
+                data = execute_delete('videos', 'video_id', video_id)
                 return data
             else:
                 return make_fail('video does not exist')
@@ -173,7 +271,7 @@ class VideoAPI(MethodView):
             return make_construction('video PUT requests currently under construction')
         else:
             return make_fail("PUT request must be made on video object")
-        # if MySQLHandler.video_exists(video_id):
+        # if video_exists(video_id):
         #     if request.form['video_title'] != '' and request.form['channel_description'] != '' and request.form['channel_thumbnail_url'] != '' and request.form['channel_uploads_playlist'] != '':
         #         cur = mysql.connection.cursor()
         #         return_message = {}
