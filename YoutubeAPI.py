@@ -102,7 +102,7 @@ def get_uploads_by_id(id, pages=1, max_count=5):
     return uploads
 
 
-def search_videos(query, pages=1, max_count=50, start_token=''):
+def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevance'):
     videos = []
     next_page_token = start_token
     for x in range(0, pages):
@@ -117,6 +117,7 @@ def search_videos(query, pages=1, max_count=50, start_token=''):
             'safeSearch': 'none',
             'type': 'video',
             'key': api_key,
+            'order': sort_by,
             'fields': 'nextPageToken,items(id/videoId,snippet(title,description,channelId,channelTitle,publishedAt,thumbnails/high/url))'
         }
 
@@ -150,25 +151,26 @@ def search_videos(query, pages=1, max_count=50, start_token=''):
             print("No more pages")
             break
         else:
-            file = open('next.txt', 'a', encoding='utf-8')
+            file = open('next.txt', 'w', encoding='utf-8')
             file.write(next_page_token + '\n')
             file.close()
-
     return videos
 
 
-def get_video_by_id(id):
+
+def get_video_by_id(vodep_id):
     video = {}
 
     data = {
         'part': 'snippet,statistics,player',
-        'id': id,
+        'id': vodep_id,
         'key': api_key,
         'fields': 'items(id,snippet(title,description,channelId,channelTitle,publishedAt,thumbnails/high/url,tags,defaultAudioLanguage),statistics(viewCount,likeCount,dislikeCount,commentCount),player/embedHtml)'
     }
 
     r = requests.get(videos_url, params=data).json()
 
+    print(str(r))
     items = r['items'][0]
     snippet = items.get('snippet', 'N/A')
     statistics = items.get('statistics', 'N/A')
@@ -200,4 +202,3 @@ def get_video_by_id(id):
         video['player'] = player.get('embedHtml', 'N/A')
 
     return video
-

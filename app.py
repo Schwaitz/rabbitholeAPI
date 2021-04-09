@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, json
 from flask_mysqldb import MySQL
-from api import YoutubeAPI
+import YoutubeAPI
 from datetime import datetime
 
 from flask.views import MethodView
@@ -195,7 +195,11 @@ class ChannelAPI(MethodView):
     def post(self):
         if request.form['channel_id'] != '':
             channel_id = request.form['channel_id']
-            return create_channel(channel_id)
+
+            if not channel_exists(channel_id):
+                return create_channel(channel_id)
+            else:
+                return make_error("channel already exists")
         else:
             return make_error("missing fields")
 
@@ -247,12 +251,15 @@ class VideoAPI(MethodView):
                 data = execute_select("""SELECT * FROM videos WHERE video_id = %s""", (video_id,))
                 return jsonify(data)
             else:
-                return make_fail('video does not exist')
+                return make_fail('video already exists')
 
     def post(self):
         if request.form['video_id'] != '':
             video_id = request.form['video_id']
-            return create_video(video_id)
+            if not video_exists(video_id):
+                return create_video(video_id)
+            else:
+                return make_error("video already exists")
         else:
             return make_error("missing fields")
 
