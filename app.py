@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template, json
 from flask_mysqldb import MySQL
+from flask_cors import CORS
 import YoutubeAPI
 from datetime import datetime
 
@@ -9,8 +10,12 @@ import app_config as app_config
 
 app = Flask(__name__)
 mysql = MySQL(app)
+CORS(app, resources={r'/*': {'origins': '*'}})
 
-app.config['TESTING'] = False
+
+debug = False
+
+app.config['TESTING'] = debug
 app.config['SECRET_KEY'] = app_config.SECRET_KEY
 
 app.config['MYSQL_HOST'] = app_config.host
@@ -251,7 +256,7 @@ class VideoAPI(MethodView):
                 data = execute_select("""SELECT * FROM videos WHERE video_id = %s""", (video_id,))
                 return jsonify(data)
             else:
-                return make_fail('video already exists')
+                return make_fail('video does not exist')
 
     def post(self):
         if request.form['video_id'] != '':
@@ -342,4 +347,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8000, debug=False)
+    app.run(host='127.0.0.1', port=8000, debug=debug)
