@@ -8,8 +8,6 @@ app_config.py
 testing/
 utils_testing/
 
-test.py
-
 *.pyc
 *.sock
 
