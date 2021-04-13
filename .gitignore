@@ -6,7 +6,7 @@ venv/
 app_config.py
 
 testing/
-utils/
+utils_testing/
 
 *.pyc
 *.sock
