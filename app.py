@@ -213,12 +213,13 @@ class TalentAPI(MethodView):
 
         else:
             talent_data = get_talent(mysql, talent)
-            matched_videos = get_videos_for_talent(mysql, talent_data['name'])
-
-            talent_data['video_count'] = len(matched_videos)
-            talent_data['videos'] = matched_videos
 
             if talent_data:
+                matched_videos = get_videos_for_talent(mysql, talent_data['name'])
+
+                talent_data['video_count'] = len(matched_videos)
+                talent_data['videos'] = matched_videos
+
                 return jsonify(talent_data)
             else:
                 return make_fail('talent does not exist')
