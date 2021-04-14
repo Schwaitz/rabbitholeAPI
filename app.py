@@ -12,9 +12,8 @@ app = Flask(__name__)
 mysql = MySQL(app)
 CORS(app, resources={r'/*': {'origins': '*'}})
 
-debug = False
 
-app.config['TESTING'] = debug
+app.config['TESTING'] = app_config.debug
 app.config['SECRET_KEY'] = app_config.SECRET_KEY
 
 app.config['MYSQL_HOST'] = app_config.host
@@ -302,4 +301,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=8000, debug=debug)
+    app.run(host='127.0.0.1', port=8000, debug=app_config.debug)
