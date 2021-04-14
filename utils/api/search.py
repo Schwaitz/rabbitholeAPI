@@ -45,7 +45,9 @@ def search(query, pages=1, max=50, starting_token='', threshold=0.0):
             details = fetch_from_api.get_video_by_id(v['video_id'])
             videos_json[v['video_id']] = details
         else:
-            print('Filtered Out (1): {}\t{}'.format(v['video_id'], v['video_title']))
+            pass
+            # print('Filtered Out (1): {}\t{}'.format(v['video_id'], v['video_title']))
+
 
     #print('{} videos after filter'.format(len(videos_json)))
     counts['filter 1'] = len(videos_json)

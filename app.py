@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_mysqldb import MySQL
 from flask_cors import CORS
 from utils.mysql.create import *
-from utils.api.match import *
+from utils.mysql.get import *
 
 from flask.views import MethodView
 
@@ -12,7 +12,7 @@ app = Flask(__name__)
 mysql = MySQL(app)
 CORS(app, resources={r'/*': {'origins': '*'}})
 
-debug = True
+debug = False
 
 app.config['TESTING'] = debug
 app.config['SECRET_KEY'] = app_config.SECRET_KEY
@@ -137,16 +137,8 @@ class VideoAPI(MethodView):
             # Yes talent data
             else:
                 talent = get_talent(mysql, talent_field)
-                data = get_videos(mysql)
 
-                matched_videos = []
-                for v in data:
-                    if talent:
-                        if talent_match(talent['name'], talent['aliases'], v):
-                            # if talent_field in v['video_title'].lower() or any(alias in v['video_title'].lower() for alias in talent_field):
-                            matched_videos.append(v)
-                    else:
-                        return make_error('invalid talent value')
+                matched_videos = get_videos_for_talent(mysql, talent['name'])
 
                 print(str(len(matched_videos)) + ' videos fetched')
 
@@ -221,6 +213,11 @@ class TalentAPI(MethodView):
 
         else:
             talent_data = get_talent(mysql, talent)
+            matched_videos = get_videos_for_talent(mysql, talent_data['name'])
+
+            talent_data['video_count'] = len(matched_videos)
+            talent_data['videos'] = matched_videos
+
             if talent_data:
                 return jsonify(talent_data)
             else:

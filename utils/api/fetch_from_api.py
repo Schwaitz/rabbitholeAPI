@@ -170,12 +170,11 @@ def get_video_by_id(video_id):
         return make_error('Failed to get video from Youtube API')
 
 
-def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevance'):
+def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevance', language_relevance=True, additional_fields={}):
     videos = []
     next_page_token = start_token
     for x in range(0, pages):
-        if verbose:
-            print('Page {} of {}'.format(str(x), str(pages)))
+        print('Page {} of {}'.format(str(x + 1), str(pages)))
 
         data = {
             'part': 'snippet',
@@ -189,10 +188,18 @@ def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevan
             'fields': 'nextPageToken,items(id/videoId,snippet(title,description,channelId,channelTitle,publishedAt,thumbnails/high/url))'
         }
 
+        if language_relevance:
+            data['relevanceLanguage'] = 'en'
+
+        for k in additional_fields:
+            data[k] = additional_fields[k]
+
         if next_page_token != '':
             data['pageToken'] = next_page_token
 
         r = requests.get(search_url, params=data).json()
+
+        # print(str(r))
 
         try:
             for item in r['items']:
@@ -218,14 +225,17 @@ def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevan
 
             if next_page_token == 'N/A':
                 print("No more pages")
+
+                file = open('./next.txt', 'w+', encoding='utf-8')
+                file.write('')
+                file.close()
                 break
             else:
-                file = open('./next.txt', 'w', encoding='utf-8')
-                file.write(next_page_token + '\n')
+                file = open('./next.txt', 'w+', encoding='utf-8')
+                file.write(str(next_page_token))
                 file.close()
-
         except:
-            print("Youtube API Error")
+            print('Youtube API Error: {}'.format(str(r)))
             break
 
     return videos

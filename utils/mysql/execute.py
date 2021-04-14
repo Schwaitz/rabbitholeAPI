@@ -26,6 +26,7 @@ def execute_select(mysql, query, values=('none',), from_flask=True):
         return return_message
 
 
+
 def execute_insert(mysql, table, fields, values, from_flask=True):
     conn = mysql.connection if from_flask else mysql
     cur = conn.cursor()

@@ -65,8 +65,11 @@ def create_video(mysql, video, check_exists=True, from_flask=True):
 
     # print("Inserting video " + video['video_id'])
 
-    if video['video_comments'] == 'N/A':
-        video['video_comments'] = 0
+    key_list = ['video_likes', 'video_dislikes', 'video_comments']
+
+    for k in key_list:
+        if video[k] == 'N/A':
+            video[k] = 0
 
     data = execute_insert(mysql, 'videos',
                           ['video_id', 'video_title', 'video_description', 'video_thumbnail_url', 'video_published_date',
@@ -106,3 +109,20 @@ def create_alias(mysql, alias, talent_name, from_flask=True):
 
     else:
         return does_not_exist_error('Talent')
+
+
+def create_entry(mysql, video, talent, check_exists=True, from_flask=True):
+    if check_exists:
+        if entry_exists(mysql, video=video, talent=talent, from_flask=from_flask):
+            return_error = already_exists_error('Entry')
+            print('fail: entry for {} with id {}'.format(talent, video))
+            return return_error
+
+    data = execute_insert(mysql, 'entries', ['video', 'talent'], [video, talent], from_flask=from_flask)
+    print('{}: entry for {} with id {}'.format(data['status'], talent, video))
+
+    return json.dumps(data)
+
+
+
+

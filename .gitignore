@@ -9,10 +9,13 @@ testing/
 test_utils/
 
 test.py
+next.txt
 
 talents.json
 
 TODO.md
+
+logs/
 
 *.pyc
 *.sock

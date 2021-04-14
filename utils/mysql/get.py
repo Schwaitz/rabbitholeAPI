@@ -35,17 +35,26 @@ def alias_exists(mysql, alias, from_flask=True):
     return data["COUNT(*)"] >= 1
 
 
+def entry_exists(mysql, video='', talent='', from_flask=True):
+    data = execute_select(mysql, """SELECT COUNT(*) FROM entries WHERE video = %s AND talent=%s""", (video, talent,), from_flask=from_flask)
+    return data["COUNT(*)"] >= 1
+
+
 def get_aliases_from_talent(mysql, talent_name, from_flask=True):
     data = execute_select(mysql, """SELECT * FROM aliases WHERE talent_name = %s""", (talent_name,), from_flask=from_flask)
+    data_type = type(data)
 
     if data:
         aliases = []
-        for d in data:
-            aliases.append(d['alias'])
-
-        return aliases
+        if data_type is list:
+            for d in data:
+                aliases.append(d['alias'])
+        else:
+            aliases.append(data['alias'])
     else:
         return []
+
+    return aliases
 
 
 def get_talent_from_alias(mysql, alias, from_flask=True):
@@ -57,7 +66,7 @@ def get_talent_from_alias(mysql, alias, from_flask=True):
 
 
 def get_talent(mysql, word, from_flask=True):
-    talent_name = get_talent_from_alias(mysql, word.lower())
+    talent_name = get_talent_from_alias(mysql, word.lower(), from_flask=from_flask)
     data = get_aliases_from_talent(mysql, talent_name, from_flask=from_flask)
 
     if data:
@@ -71,12 +80,16 @@ def get_talent(mysql, word, from_flask=True):
         return {}
 
 
-def get_talents(mysql, from_flask=True):
+def get_talents(mysql, from_flask=True, include_collab=False):
     data = execute_select(mysql, """SELECT * FROM talents""", from_flask=from_flask)
 
     talents = []
     for d in data:
-        talents.append(d['name'])
+        if d['name'] != 'collab':
+            talents.append(d['name'])
+        else:
+            if include_collab:
+                talents.append(d['name'])
 
     return talents
 
@@ -84,6 +97,24 @@ def get_talents(mysql, from_flask=True):
 def get_aliases(mysql, from_flask=True):
     data = execute_select(mysql, """SELECT * FROM aliases""", from_flask=from_flask)
     return data
+
+
+def get_videos_for_talent(mysql, talent, from_flask=True):
+    data = execute_select(mysql, """SELECT videos.* FROM videos JOIN entries ON videos.video_id = entries.video WHERE entries.talent = %s""", (talent,), from_flask=from_flask)
+
+    if not type(data) is list:
+        return [data]
+    else:
+        return data
+
+
+def get_talents_for_video(mysql, video, from_flask=True):
+    data = execute_select(mysql, """SELECT talents.* FROM talents JOIN entries ON talents.name = entries.talent WHERE entries.video = %s""", (video,), from_flask=from_flask)
+
+    if not type(data) is list:
+        return [data]
+    else:
+        return data
 
 
 def get_channel_hm_from_id(channel_id):

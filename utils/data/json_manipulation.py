@@ -39,9 +39,12 @@ def read_json(file_name):
 
 
 def write_json(identifier, to_write, timestamp=True):
-    file = open(identifier + '-' + get_timestamp() + '.json', 'w+', encoding='utf-8')
+    file_name = ''
+    if timestamp:
+        file_name = '{}-{}.json'.format(identifier, get_timestamp())
+    else:
+        file_name = identifier + '.json'
+
+    file = open(file_name, 'w+', encoding='utf-8')
     file.write(json.dumps(to_write))
     file.close()
-
-
-
