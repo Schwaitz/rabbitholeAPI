@@ -201,6 +201,7 @@ class VideoAPI(MethodView):
 
 class TalentAPI(MethodView):
     def get(self, talent):
+        talent = talent.lower()
         if talent is None:
             aliases = get_aliases(mysql)
 
@@ -214,15 +215,27 @@ class TalentAPI(MethodView):
         else:
             talent_data = get_talent(mysql, talent)
 
-            if talent_data:
-                matched_videos = get_videos_for_talent(mysql, talent_data['name'])
+            if talent != 'collab':
+                if talent_data:
+                    matched_videos = get_videos_for_talent(mysql, talent_data['name'])
 
-                talent_data['video_count'] = len(matched_videos)
-                talent_data['videos'] = matched_videos
+                    talent_data['video_count'] = len(matched_videos)
+                    talent_data['videos'] = matched_videos
 
-                return jsonify(talent_data)
+                    return jsonify(talent_data)
+                else:
+                    return make_fail('talent does not exist')
             else:
-                return make_fail('talent does not exist')
+                matched_videos = get_videos_for_talent(mysql, 'collab')
+
+                data = {
+                    'name': 'collab',
+                    'aliases': [],
+                    'video_count': len(matched_videos),
+                    'videos': matched_videos
+                }
+
+                return jsonify(data)
 
     def post(self):
         if request.form['talent'] != '':
