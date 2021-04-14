@@ -1,44 +1,42 @@
-import json
 from datetime import datetime
-import YoutubeAPI
 
 import app_config as app_config
 
 from utils.mysql.execute import execute_select
 
 
-def get_channels(mysql):
-    data = execute_select(mysql, """SELECT * FROM channels""")
+def get_channels(mysql, from_flask=True):
+    data = execute_select(mysql, """SELECT * FROM channels""", from_flask=from_flask)
     return data
 
 
-def get_videos(mysql):
-    data = execute_select(mysql, """SELECT * FROM videos""")
+def get_videos(mysql, from_flask=True):
+    data = execute_select(mysql, """SELECT * FROM videos""", from_flask=from_flask)
     return data
 
 
-def channel_exists(mysql, channel_id):
-    data = execute_select(mysql, """SELECT COUNT(*) FROM channels WHERE channel_id = %s""", (channel_id,))
+def channel_exists(mysql, channel_id, from_flask=True):
+    data = execute_select(mysql, """SELECT COUNT(*) FROM channels WHERE channel_id = %s""", (channel_id,), from_flask=from_flask)
     return data["COUNT(*)"] >= 1
 
 
-def video_exists(mysql, video_id):
-    data = execute_select(mysql, """SELECT COUNT(*) FROM videos WHERE video_id = %s""", (video_id,))
+def video_exists(mysql, video_id, from_flask=True):
+    data = execute_select(mysql, """SELECT COUNT(*) FROM videos WHERE video_id = %s""", (video_id,), from_flask=from_flask)
     return data["COUNT(*)"] >= 1
 
 
-def talent_exists(mysql, talent_name):
-    data = execute_select(mysql, """SELECT COUNT(*) FROM talents WHERE name = %s""", (talent_name,))
+def talent_exists(mysql, talent_name, from_flask=True):
+    data = execute_select(mysql, """SELECT COUNT(*) FROM talents WHERE name = %s""", (talent_name,), from_flask=from_flask)
     return data["COUNT(*)"] >= 1
 
 
-def alias_exists(mysql, alias):
-    data = execute_select(mysql, """SELECT COUNT(*) FROM aliases WHERE alias = %s""", (alias,))
+def alias_exists(mysql, alias, from_flask=True):
+    data = execute_select(mysql, """SELECT COUNT(*) FROM aliases WHERE alias = %s""", (alias,), from_flask=from_flask)
     return data["COUNT(*)"] >= 1
 
 
-def get_aliases_from_talent(mysql, talent_name):
-    data = execute_select(mysql, """SELECT * FROM aliases WHERE talent_name = %s""", (talent_name,))
+def get_aliases_from_talent(mysql, talent_name, from_flask=True):
+    data = execute_select(mysql, """SELECT * FROM aliases WHERE talent_name = %s""", (talent_name,), from_flask=from_flask)
 
     if data:
         aliases = []
@@ -50,17 +48,17 @@ def get_aliases_from_talent(mysql, talent_name):
         return []
 
 
-def get_talent_from_alias(mysql, alias):
-    data = execute_select(mysql, """SELECT * FROM aliases WHERE alias = %s""", (alias,))
+def get_talent_from_alias(mysql, alias, from_flask=True):
+    data = execute_select(mysql, """SELECT * FROM aliases WHERE alias = %s""", (alias,), from_flask=from_flask)
     if data:
         return data['talent_name']
     else:
         return ''
 
 
-def get_talent(mysql, word):
+def get_talent(mysql, word, from_flask=True):
     talent_name = get_talent_from_alias(mysql, word.lower())
-    data = get_aliases_from_talent(mysql, talent_name)
+    data = get_aliases_from_talent(mysql, talent_name, from_flask=from_flask)
 
     if data:
         return_data = {
@@ -73,8 +71,8 @@ def get_talent(mysql, word):
         return {}
 
 
-def get_talents(mysql):
-    data = execute_select(mysql, """SELECT * FROM talents""")
+def get_talents(mysql, from_flask=True):
+    data = execute_select(mysql, """SELECT * FROM talents""", from_flask=from_flask)
 
     talents = []
     for d in data:
@@ -83,8 +81,8 @@ def get_talents(mysql):
     return talents
 
 
-def get_aliases(mysql):
-    data = execute_select(mysql, """SELECT * FROM aliases""")
+def get_aliases(mysql, from_flask=True):
+    data = execute_select(mysql, """SELECT * FROM aliases""", from_flask=from_flask)
     return data
 
 

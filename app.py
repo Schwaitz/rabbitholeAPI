@@ -1,10 +1,8 @@
-from flask import Flask, request, jsonify, render_template, json
+from flask import Flask, request, jsonify, render_template
 from flask_mysqldb import MySQL
 from flask_cors import CORS
-import YoutubeAPI
-from datetime import datetime
-from utils.mysql.get import *
 from utils.mysql.create import *
+from utils.api.match import *
 
 from flask.views import MethodView
 
@@ -14,7 +12,7 @@ app = Flask(__name__)
 mysql = MySQL(app)
 CORS(app, resources={r'/*': {'origins': '*'}})
 
-debug = False
+debug = True
 
 app.config['TESTING'] = debug
 app.config['SECRET_KEY'] = app_config.SECRET_KEY
@@ -138,12 +136,15 @@ class VideoAPI(MethodView):
 
             # Yes talent data
             else:
+                talent = get_talent(mysql, talent_field)
                 data = get_videos(mysql)
 
                 matched_videos = []
                 for v in data:
-                    if talent_field in v['video_title'].lower() or any(alias in v['video_title'].lower() for alias in talent_field):
-                        matched_videos.append(v)
+                    if talent:
+                        if talent_match(talent['name'], talent['aliases'], v):
+                            # if talent_field in v['video_title'].lower() or any(alias in v['video_title'].lower() for alias in talent_field):
+                            matched_videos.append(v)
 
                 print(str(len(matched_videos)) + ' videos fetched')
 

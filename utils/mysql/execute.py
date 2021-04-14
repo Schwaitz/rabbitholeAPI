@@ -4,8 +4,10 @@ from MySQLdb import cursors
 import app_config as app_config
 
 
-def execute_select(mysql, query, values=('none',)):
-    cur = mysql.connection.cursor()
+def execute_select(mysql, query, values=('none',), from_flask=True):
+    conn = mysql.connection if from_flask else mysql
+    cur = conn.cursor()
+
     return_message = {}
     try:
         if values[0] == 'none':
@@ -24,8 +26,9 @@ def execute_select(mysql, query, values=('none',)):
         return return_message
 
 
-def execute_insert(mysql, table, fields, values):
-    cur = mysql.connection.cursor()
+def execute_insert(mysql, table, fields, values, from_flask=True):
+    conn = mysql.connection if from_flask else mysql
+    cur = conn.cursor()
 
     return_message = {}
     try:
@@ -46,7 +49,7 @@ def execute_insert(mysql, table, fields, values):
         query = """INSERT INTO {} {} VALUES {}""".format(table, fields_string, values_string)
 
         cur.execute(query, values)
-        mysql.connection.commit()
+        conn.commit()
         return_message = {'status': 'success', 'action': 'INSERT', 'data': {}}
 
         for i in range(0, len(fields)):
@@ -59,13 +62,15 @@ def execute_insert(mysql, table, fields, values):
         return return_message
 
 
-def execute_delete(mysql, table, field, value):
-    cur = mysql.connection.cursor()
+def execute_delete(mysql, table, field, value, from_flask=True):
+    conn = mysql.connection if from_flask else mysql
+    cur = conn.cursor()
+
     return_message = {}
     try:
         query = """DELETE FROM {} WHERE {} = %s""".format(table, field)
         cur.execute(query, (value,))
-        mysql.connection.commit()
+        conn.commit()
 
         return_message = {'status': 'success', 'action': 'DELETE'}
     except Exception as e:

@@ -1,8 +1,6 @@
 import json
-from datetime import datetime
-import YoutubeAPI
 
-import app_config as app_config
+from utils.api.fetch_from_api import *
 
 from utils.mysql.execute import *
 from utils.mysql.get import *
@@ -36,66 +34,71 @@ def does_not_exist_error(category):
     return make_fail(category + ' does not exist')
 
 
-def create_channel(mysql, channel, check_exists=True):
+def create_channel(mysql, channel, check_exists=True, from_flask=True):
     if check_exists:
-        if channel_exists(mysql, channel['channel_id']):
+        if channel_exists(mysql, channel['channel_id'], from_flask=from_flask):
             return already_exists_error('Channel')
 
     data = execute_insert(mysql, 'channels', ['channel_id', 'channel_title', 'channel_description', 'channel_thumbnail_url', 'channel_uploads_playlist'],
-                          (channel['channel_id'], channel['channel_title'], channel['channel_description'], channel['channel_thumbnail_url'], channel['channel_uploads_playlist']))
+                          (channel['channel_id'], channel['channel_title'], channel['channel_description'], channel['channel_thumbnail_url'], channel['channel_uploads_playlist']),
+                          from_flask=from_flask)
     return json.dumps(data)
 
 
-def create_channel_by_id(mysql, channel_id):
-    if not channel_exists(mysql, channel_id):
-        channel = YoutubeAPI.get_channel_by_id(channel_id)
-        create_channel(mysql, channel, False)
+def create_channel_by_id(mysql, channel_id, from_flask=True):
+    if not channel_exists(mysql, channel_id, from_flask=from_flask):
+        channel = get_channel_by_id(channel_id)
+        create_channel(mysql, channel, False, from_flask=from_flask)
 
 
-def create_video(mysql, video, check_exists=True):
+def create_video(mysql, video, check_exists=True, from_flask=True):
     if check_exists:
-        if video_exists(mysql, video['video_id']):
+        if video_exists(mysql, video['video_id'], from_flask=from_flask):
             return already_exists_error('Video')
 
-    if not channel_exists(mysql, video['channel_id']):
-        res = create_channel(mysql, video['channel_id'])
-        print("Channel Created: " + str(res))
+    if not channel_exists(mysql, video['channel_id'], from_flask=from_flask):
+        res = create_channel_by_id(mysql, video['channel_id'], from_flask=from_flask)
+        # print("Channel Created: " + str(res))
     else:
         pass
         # print("Channel Exists, Skipping")
 
-    print("Inserting video " + video['video_id'])
+    # print("Inserting video " + video['video_id'])
+
+    if video['video_comments'] == 'N/A':
+        video['video_comments'] = 0
+
     data = execute_insert(mysql, 'videos',
                           ['video_id', 'video_title', 'video_description', 'video_thumbnail_url', 'video_published_date',
                            'video_views', 'video_likes', 'video_dislikes', 'video_comments', 'video_channel_hm', 'video_tags'],
                           (video['video_id'], video['video_title'], video['video_description'], video['video_thumbnail_url'], get_published_datetime(video['video_published_date']),
                            video['video_views'], video['video_likes'], video['video_dislikes'], video['video_comments'], get_channel_hm_from_id(video['channel_id']),
-                           json.dumps(video['video_tags'])))
+                           json.dumps(video['video_tags'])), from_flask=from_flask)
     return json.dumps(data)
 
 
-def create_video_by_id(mysql, video_id):
-    if not video_exists(mysql, video_id):
-        video = YoutubeAPI.get_video_by_id(video_id)
+def create_video_by_id(mysql, video_id, from_flask=True):
+    if not video_exists(mysql, video_id, from_flask=from_flask):
+        video = get_video_by_id(video_id)
 
-        create_video(mysql, video, False)
+        create_video(mysql, video, False, from_flask=from_flask)
 
 
-def create_talent(mysql, talent_name, check_exists=True):
+def create_talent(mysql, talent_name, check_exists=True, from_flask=True):
     if check_exists:
-        if talent_exists(mysql, talent_name):
+        if talent_exists(mysql, talent_name, from_flask=from_flask):
             return already_exists_error('Talent')
 
     print("Creating talent with name " + talent_name)
-    data = execute_insert(mysql, 'talents', ['name'], [talent_name])
+    data = execute_insert(mysql, 'talents', ['name'], [talent_name], from_flask=from_flask)
     return json.dumps(data)
 
 
-def create_alias(mysql, alias, talent_name):
-    if talent_exists(mysql, talent_name):
-        if not alias_exists(mysql, alias):
+def create_alias(mysql, alias, talent_name, from_flask=True):
+    if talent_exists(mysql, talent_name, from_flask=from_flask):
+        if not alias_exists(mysql, alias, from_flask=from_flask):
             # print("Creating alias with name " + alias + " for " + talent_name)
-            data = execute_insert(mysql, 'aliases', ['alias', 'talent_name'], [alias, talent_name])
+            data = execute_insert(mysql, 'aliases', ['alias', 'talent_name'], [alias, talent_name], from_flask=from_flask)
             return json.dumps(data)
 
         else:

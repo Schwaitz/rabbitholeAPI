@@ -6,9 +6,11 @@ venv/
 app_config.py
 
 testing/
-utils_testing/
+test_utils/
 
 test.py
+
+talents.json
 
 TODO.md
 

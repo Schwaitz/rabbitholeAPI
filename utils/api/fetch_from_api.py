@@ -64,7 +64,7 @@ def get_channel_by_id(id):
             channel['channel_description'] = snippet.get('description', 'N/A')
             channel['channel_id'] = item.get('id', 'N/A')
             channel['channel_url'] = 'https://www.youtube.com/channel/' + channel['channel_id']
-            channel['thumbnail'] = snippet.get('thumbnails', 'N/A').get('high', 'N/A').get('url', 'N/A')
+            channel['channel_thumbnail_url'] = snippet.get('thumbnails', 'N/A').get('high', 'N/A').get('url', 'N/A')
 
         if details != 'N/A':
             channel['channel_uploads_playlist'] = details.get('relatedPlaylists', 'N/A').get('uploads', 'N/A')
@@ -152,7 +152,7 @@ def get_video_by_id(video_id):
             video['video_url'] = 'https://www.youtube.com/watch?v=' + video['video_id']
             video['video_tags'] = snippet.get('tags', [])
 
-            video['video_published_data'] = snippet.get('publishedAt', 'N/A')
+            video['video_published_date'] = snippet.get('publishedAt', 'N/A')
             video['video_thumbnail_url'] = snippet.get('thumbnails', 'N/A').get('high', 'N/A').get('url', 'N/A')
 
             video['channel_title'] = snippet.get('channelTitle', 'N/A')
@@ -186,7 +186,7 @@ def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevan
             'type': 'video',
             'key': app_config.YOUTUBE_API_KEY,
             'order': sort_by,
-            'fields': 'nextPageToken,items(id/videoId,snippet(title,description,channelId,channelTitle,publishedAt,thumbnails/high/url, tags))'
+            'fields': 'nextPageToken,items(id/videoId,snippet(title,description,channelId,channelTitle,publishedAt,thumbnails/high/url))'
         }
 
         if next_page_token != '':
@@ -203,10 +203,9 @@ def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevan
                     video['video_title'] = snippet.get('title', 'N/A')
                     video['video_description'] = snippet.get('description', 'N/A')
                     video['video_id'] = item.get('id', 'N/A').get('videoId', 'N/A')
-                    video['video_url'] = 'https://www.youtube.com/watch?v=' + video['videoId']
-                    video['video_tags'] = snippet.get('tags', [])
+                    video['video_url'] = 'https://www.youtube.com/watch?v=' + video['video_id']
 
-                    video['video_published_data'] = snippet.get('publishedAt', 'N/A')
+                    video['video_published_date'] = snippet.get('publishedAt', 'N/A')
                     video['video_thumbnail_url'] = snippet.get('thumbnails', 'N/A').get('high', 'N/A').get('url', 'N/A')
 
                     video['channel_title'] = snippet.get('channelTitle', 'N/A')
@@ -221,7 +220,7 @@ def search_videos(query, pages=1, max_count=50, start_token='', sort_by='relevan
                 print("No more pages")
                 break
             else:
-                file = open('next.txt', 'w', encoding='utf-8')
+                file = open('./next.txt', 'w', encoding='utf-8')
                 file.write(next_page_token + '\n')
                 file.close()
 
