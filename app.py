@@ -145,6 +145,8 @@ class VideoAPI(MethodView):
                         if talent_match(talent['name'], talent['aliases'], v):
                             # if talent_field in v['video_title'].lower() or any(alias in v['video_title'].lower() for alias in talent_field):
                             matched_videos.append(v)
+                    else:
+                        return make_error('invalid talent value')
 
                 print(str(len(matched_videos)) + ' videos fetched')
 
