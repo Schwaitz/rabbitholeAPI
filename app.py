@@ -200,7 +200,6 @@ class VideoAPI(MethodView):
 
 class TalentAPI(MethodView):
     def get(self, talent):
-        talent = talent.lower()
         if talent is None:
             aliases = get_aliases(mysql)
 
@@ -212,6 +211,7 @@ class TalentAPI(MethodView):
             return jsonify(data)
 
         else:
+            talent = talent.lower()
             talent_data = get_talent(mysql, talent)
 
             if talent != 'collab':
